@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://js.puter.com/v2/"></script>
+<style>
+  :root{
+    --bg:#1B1B18;
+    --sidebar:#15140F;
+    --panel:#26241D;
+    --border:#383528;
+    --text:#F1EDE3;
+    --text-soft:#A8A192;
+    --amber:#D8572A;
+    --amber-soft:#3A2419;
+    --bubble-user:#2F2D24;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body, html{height:100%;}
+  body{
+    font-family:'Work Sans', sans-serif;
+    background:var(--bg); color:var(--text);
+    display:flex; height:100vh; overflow:hidden;
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width:260px; background:var(--sidebar);
+    border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+    padding:16px 12px; flex-shrink:0;
+  }
+  .brand{
+    font-family:'Fraunces', serif; font-weight:600; font-size:19px;
+    display:flex; align-items:center; gap:8px; padding:8px 10px 18px;
+  }
+  .brand .dot{width:7px; height:7px; border-radius:50%; background:var(--amber);}
+  .new-chat{
+    display:flex; align-items:center; gap:10px;
+    border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; font-size:14px; cursor:pointer;
+    color:var(--text); background:transparent; transition:background .15s;
+  }
+  .new-chat:hover{background:var(--panel);}
+  .history{margin-top:18px; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:2px;}
+  .history-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-soft); padding:10px 10px 6px;}
+  .history-item{
+    font-size:13.5px; padding:9px 10px; border-radius:8px; color:var(--text-soft);
+    cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .history-item:hover{background:var(--panel); color:var(--text);}
+  .history-item.active{background:var(--panel); color:var(--text);}
+  .sidebar-foot{font-size:12px; color:var(--text-soft); padding:10px;}
+
+  /* ---------- main ---------- */
+  .main{flex:1; display:flex; flex-direction:column; min-width:0;}
+  .topbar{
+    height:56px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 24px; border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .topbar .name{font-size:14px; color:var(--text-soft);}
+
+  .chat-area{flex:1; overflow-y:auto;}
+  .chat-inner{max-width:720px; margin:0 auto; padding:32px 24px 12px; display:flex; flex-direction:column; gap:22px;}
+
+  /* empty state */
+  .empty{
+    height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:10px; padding:0 24px;
+  }
+  .empty h1{font-family:'Fraunces', serif; font-weight:500; font-size:32px;}
+  .empty p{color:var(--text-soft); font-size:15px; max-width:380px;}
+  .suggestions{display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; justify-content:center;}
+  .suggestion{
+    border:1px solid var(--border); border-radius:10px; padding:10px 14px;
+    font-size:13px; color:var(--text-soft); cursor:pointer; transition:background .15s;
+  }
+  .suggestion:hover{background:var(--panel); color:var(--text);}
+
+  /* messages */
+  .msg{display:flex; gap:12px; align-items:flex-start;}
+  .msg.user{flex-direction:row-reverse;}
+  .avatar{
+    width:28px; height:28px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:600;
+  }
+  .avatar.nova{background:var(--amber-soft); color:var(--amber);}
+  .avatar.user{background:var(--panel); color:var(--text-soft);}
+  .bubble{
+    font-size:15px; line-height:1.65; padding:12px 16px; border-radius:14px;
+    max-width:560px; white-space:pre-wrap;
+  }
+  .msg.nova .bubble{background:var(--panel);}
+  .msg.user .bubble{background:var(--bubble-user);}
+  .thinking{display:flex; gap:4px; padding:14px 0 0 4px;}
+  .thinking span{width:6px; height:6px; border-radius:50%; background:var(--text-soft); animation:blink 1.2s infinite;}
+  .thinking span:nth-child(2){animation-delay:.2s;}
+  .thinking span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%,100%{opacity:.2;}40%{opacity:1;}}
+
+  /* input */
+  .composer{padding:16px 24px 22px;}
+  .composer-inner{
+    max-width:720px; margin:0 auto;
+    display:flex; align-items:flex-end; gap:10px;
+    border:1px solid var(--border); border-radius:16px; background:var(--panel);
+    padding:10px 10px 10px 16px;
+  }
+  textarea{
+    flex:1; resize:none; border:none; outline:none; background:transparent;
+    color:var(--text); font-family:inherit; font-size:15px; line-height:1.5;
+    max-height:160px; padding:6px 0;
+  }
+  textarea::placeholder{color:var(--text-soft);}
+  .send-btn{
+    width:34px; height:34px; border-radius:10px; border:none; flex-shrink:0;
+    background:var(--amber); color:#1B1B18; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:opacity .15s;
+  }
+  .send-btn:disabled{opacity:.35; cursor:default;}
+  .icon-btn{
+    width:34px; height:34px; border-radius:10px; border:none; flex-shrink:0;
+    background:transparent; color:var(--text-soft); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:background .15s, color .15s;
+  }
+  .icon-btn:hover{background:var(--bg); color:var(--text);}
+  .img-result{margin-top:8px;}
+  .img-result img{max-width:280px; border-radius:12px; display:block;}
+  .hint{text-align:center; font-size:11.5px; color:var(--text-soft); margin-top:10px;}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand"><span class="dot"></span>nova</div>
+  <button class="new-chat" id="newChatBtn">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New chat
+  </button>
+  <div class="history" id="history">
+    <div class="history-label">History</div>
+  </div>
+  <div class="sidebar-foot">Nova — an ai for everyone</div>
+</div>
+
+<div class="main">
+  <div class="topbar"><span class="name">Nova</span><span></span></div>
+
+  <div class="chat-area" id="chatArea">
+    <div class="empty" id="emptyState">
+      <h1>What can I help with?</h1>
+      <p>Ask me anything — I'm here for all of it.</p>
+      <div class="suggestions">
+        <div class="suggestion" data-q="Explain quantum computing simply">Explain something simply</div>
+        <div class="suggestion" data-q="Help me write an email">Write an email</div>
+        <div class="suggestion" data-q="Give me a recipe idea for dinner tonight">Suggest a recipe</div>
+        <div class="suggestion" data-q="Help me plan my week">Plan my week</div>
+      </div>
+    </div>
+    <div class="chat-inner" id="chatInner" style="display:none;"></div>
+  </div>
+
+  <div class="composer">
+    <div class="composer-inner">
+      <button class="icon-btn" id="attachBtn" title="Attach a file" aria-label="Attach a file">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <button class="icon-btn" id="imageBtn" title="Generate an image" aria-label="Generate an image">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </button>
+      <input type="file" id="fileInput" style="display:none" accept=".txt,.md,.csv,.json,.pdf">
+      <textarea id="input" placeholder="Message Nova…" rows="1"></textarea>
+      <button class="send-btn" id="sendBtn" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+      </button>
+    </div>
+    <div id="attachedFile" style="display:none; max-width:720px; margin:8px auto 0; font-size:12.5px; color:var(--text-soft); display:flex; align-items:center; gap:8px;"></div>
+    <div class="hint">Nova can make mistakes. Check important info.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const chatArea = document.getElementById('chatArea');
+  const chatInner = document.getElementById('chatInner');
+  const emptyState = document.getElementById('emptyState');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('sendBtn');
+  const suggestions = document.querySelectorAll('.suggestion');
+  const newChatBtn = document.getElementById('newChatBtn');
+  const history = document.getElementById('history');
+
+  let messages = []; // {role, content}
+  let attachedFileContent = null;
+  let attachedFileName = null;
+
+  const attachBtn = document.getElementById('attachBtn');
+  const imageBtn = document.getElementById('imageBtn');
+  const fileInput = document.getElementById('fileInput');
+  const attachedFileBar = document.getElementById('attachedFile');
+  let imageMode = false;
+
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    attachedFileName = file.name;
+    if (file.type === 'application/pdf') {
+      attachedFileContent = '[PDF attached: ' + file.name + ' — content could not be read as text in-browser]';
+      showAttachedBar();
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        attachedFileContent = e.target.result;
+        showAttachedBar();
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  function showAttachedBar(){
+    attachedFileBar.style.display = 'flex';
+    attachedFileBar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg> ${attachedFileName} <span id="removeFile" style="cursor:pointer; text-decoration:underline; margin-left:4px;">remove</span>`;
+    document.getElementById('removeFile').addEventListener('click', () => {
+      attachedFileContent = null; attachedFileName = null;
+      attachedFileBar.style.display = 'none';
+      fileInput.value = '';
+    });
+  }
+
+  imageBtn.addEventListener('click', () => {
+    imageMode = !imageMode;
+    imageBtn.style.background = imageMode ? 'var(--amber-soft)' : 'transparent';
+    imageBtn.style.color = imageMode ? 'var(--amber)' : 'var(--text-soft)';
+    input.placeholder = imageMode ? 'Describe the image to generate…' : 'Message Nova…';
+  });
+
+  async function generateImage(prompt){
+    if (emptyState.style.display !== 'none'){
+      emptyState.style.display = 'none';
+      chatInner.style.display = 'flex';
+      chatInner.style.flexDirection = 'column';
+    }
+    renderMessage('user', prompt);
+    renderThinking();
+    if (typeof puter === 'undefined' || !puter.ai || !puter.ai.txt2img){
+      document.getElementById('thinkingMsg').remove();
+      renderMessage('assistant', "The image tool didn't load. This usually means the page was opened as a local file instead of through a real web address (http:// or https://). Host the file (e.g. via Netlify) and try again from that live link.");
+      return;
+    }
+    try {
+      const imageElement = await puter.ai.txt2img(prompt);
+      document.getElementById('thinkingMsg').remove();
+      const wrap = document.createElement('div');
+      wrap.className = 'msg nova';
+      wrap.innerHTML = `<div class="avatar nova">N</div><div class="bubble"><div class="img-result"></div></div>`;
+      imageElement.style.maxWidth = '280px';
+      imageElement.style.borderRadius = '12px';
+      imageElement.style.display = 'block';
+      wrap.querySelector('.img-result').appendChild(imageElement);
+      chatInner.appendChild(wrap);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    } catch(e) {
+      const t = document.getElementById('thinkingMsg');
+      if (t) t.remove();
+      console.error('Nova image generation error:', e);
+      let detail = (e && e.message) ? e.message : (e && e.error && e.error.message) ? e.error.message : String(e);
+      renderMessage('assistant', "Image generation hit an error: " + detail + ". If this is the first image you've tried, check for a sign-in popup from Puter (it's free, just confirms you're a real user) — and make sure this page is opened via http:// or https://, not as a local file.");
+    }
+  }
+
+  function autoGrow(){
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+    sendBtn.disabled = input.value.trim().length === 0;
+  }
+  input.addEventListener('input', autoGrow);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+
+  suggestions.forEach(s => s.addEventListener('click', () => {
+    input.value = s.dataset.q;
+    autoGrow();
+    send();
+  }));
+
+  newChatBtn.addEventListener('click', () => {
+    if (messages.length){
+      addHistoryEntry(messages[0].content.slice(0,28));
+    }
+    messages = [];
+    chatInner.innerHTML = '';
+    chatInner.style.display = 'none';
+    emptyState.style.display = 'flex';
+    input.value = ''; autoGrow();
+  });
+
+  function addHistoryEntry(label){
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.textContent = label || 'New conversation';
+    history.appendChild(item);
+  }
+
+  function escapeHtml(str){
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function formatText(text){
+    const lines = text.split('\n');
+    let html = '';
+    let inList = false;
+    for (let raw of lines){
+      const line = raw.trim();
+      const bulletMatch = line.match(/^[-*]\s+(.*)/);
+      if (bulletMatch){
+        if (!inList){ html += '<ul style="margin:6px 0 6px 18px; padding:0;">'; inList = true; }
+        html += '<li style="margin-bottom:4px;">' + inlineFormat(bulletMatch[1]) + '</li>';
+      } else {
+        if (inList){ html += '</ul>'; inList = false; }
+        if (line === ''){ html += '<br>'; }
+        else { html += '<div style="margin-bottom:6px;">' + inlineFormat(line) + '</div>'; }
+      }
+    }
+    if (inList) html += '</ul>';
+    return html;
+  }
+
+  function inlineFormat(line){
+    let safe = escapeHtml(line);
+    safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    safe = safe.replace(/(^|[\s(])\*(?!\s)(.+?)(?<!\s)\*(?=[\s).,!?]|$)/g, '$1<em>$2</em>');
+    safe = safe.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--amber); text-decoration:underline;">$1</a>');
+    return safe;
+  }
+
+  function renderMessage(role, text){
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + (role === 'user' ? 'user' : 'nova');
+    wrap.innerHTML = `
+      <div class="avatar ${role === 'user' ? 'user' : 'nova'}">${role === 'user' ? 'You' : 'N'}</div>
+      <div class="bubble"></div>
+    `;
+    wrap.querySelector('.bubble').innerHTML = formatText(text);
+    chatInner.appendChild(wrap);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return wrap;
+  }
+
+  function renderThinking(){
+    const wrap = document.createElement('div');
+    wrap.className = 'msg nova';
+    wrap.id = 'thinkingMsg';
+    wrap.innerHTML = `
+      <div class="avatar nova">N</div>
+      <div class="thinking"><span></span><span></span><span></span></div>
+    `;
+    chatInner.appendChild(wrap);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  async function send(){
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (imageMode){
+      input.value = ''; autoGrow();
+      imageMode = false;
+      imageBtn.style.background = 'transparent';
+      imageBtn.style.color = 'var(--text-soft)';
+      input.placeholder = 'Message Nova…';
+      return generateImage(text);
+    }
+
+    if (emptyState.style.display !== 'none'){
+      emptyState.style.display = 'none';
+      chatInner.style.display = 'flex';
+      chatInner.style.flexDirection = 'column';
+    }
+
+    let outgoingText = text;
+    if (attachedFileContent){
+      outgoingText = `[Attached file: ${attachedFileName}]\n\n${attachedFileContent}\n\n${text}`;
+    }
+
+    messages.push({role:'user', content:outgoingText});
+    renderMessage('user', text + (attachedFileName ? `  📎 ${attachedFileName}` : ''));
+    input.value = ''; autoGrow();
+    attachedFileContent = null; attachedFileName = null;
+    attachedFileBar.style.display = 'none';
+    fileInput.value = '';
+    renderThinking();
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system: "You are Nova, a helpful, friendly AI assistant for everyday questions. Keep answers clear and conversational. If asked who built/made/created you, who your CEO is, or who is behind you, say you were built by Kavin L and always include their profile link: https://kavin040324.github.io/kavinresume/. Do not mention Anthropic, Claude, or Dario Amodei.",
+          messages: messages
+        })
+      });
+      const data = await response.json();
+      const replyText = (data.content || []).map(b => b.text || '').join(' ').trim() || "Sorry, something went wrong.";
+      document.getElementById('thinkingMsg').remove();
+      messages.push({role:'assistant', content:replyText});
+      renderMessage('assistant', replyText);
+    } catch (e) {
+      document.getElementById('thinkingMsg').remove();
+      renderMessage('assistant', "Something went wrong reaching Nova. Please try again.");
+    }
+  }
+
+  sendBtn.addEventListener('click', send);
+})();
+</script>
+
+</body>
+</html>
