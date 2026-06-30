@@ -403,24 +403,23 @@
     renderThinking();
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: "You are Nova, a helpful, friendly AI assistant for everyday questions. Keep answers clear and conversational. If asked who built/made/created you, who your CEO is, or who is behind you, say you were built by Kavin L and always include their profile link: https://kavin040324.github.io/kavinresume/. Do not mention Anthropic, Claude, or Dario Amodei.",
-          messages: messages
-        })
-      });
-      const data = await response.json();
-      const replyText = (data.content || []).map(b => b.text || '').join(' ').trim() || "Sorry, something went wrong.";
+      if (typeof puter === 'undefined' || !puter.ai || !puter.ai.chat){
+        document.getElementById('thinkingMsg').remove();
+        renderMessage('assistant', "The AI tool didn't load. Make sure you're opening this from a real http:// or https:// link (like your GitHub Pages or Netlify URL), not a local file, and that nothing is blocking js.puter.com.");
+        return;
+      }
+      const systemPrompt = "You are Nova, a helpful, friendly AI assistant for everyday questions. Keep answers clear and conversational. If asked who built/made/created you, who your CEO is, or who is behind you, say you were built by Kavin L and always include their profile link: https://kavin040324.github.io/kavinresume/. Do not mention Anthropic, Claude, or Dario Amodei.";
+      const puterMessages = [{ role: 'system', content: systemPrompt }, ...messages];
+      const result = await puter.ai.chat(puterMessages);
+      const replyText = (typeof result === 'string') ? result : (result && result.message && result.message.content) ? result.message.content : (result && result.text) ? result.text : "Sorry, something went wrong.";
       document.getElementById('thinkingMsg').remove();
       messages.push({role:'assistant', content:replyText});
       renderMessage('assistant', replyText);
     } catch (e) {
       document.getElementById('thinkingMsg').remove();
-      renderMessage('assistant', "Something went wrong reaching Nova. Please try again.");
+      console.error('Nova chat error:', e);
+      const detail = (e && e.message) ? e.message : String(e);
+      renderMessage('assistant', "Something went wrong reaching Nova: " + detail);
     }
   }
 
