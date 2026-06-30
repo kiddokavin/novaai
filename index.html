@@ -1,3 +1,6 @@
+
+
+Nova chat · HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,7 +30,7 @@
     background:var(--bg); color:var(--text);
     display:flex; height:100vh; overflow:hidden;
   }
-
+ 
   /* ---------- sidebar ---------- */
   .sidebar{
     width:260px; background:var(--sidebar);
@@ -56,7 +59,7 @@
   .history-item:hover{background:var(--panel); color:var(--text);}
   .history-item.active{background:var(--panel); color:var(--text);}
   .sidebar-foot{font-size:12px; color:var(--text-soft); padding:10px;}
-
+ 
   /* ---------- main ---------- */
   .main{flex:1; display:flex; flex-direction:column; min-width:0;}
   .topbar{
@@ -64,10 +67,10 @@
     padding:0 24px; border-bottom:1px solid var(--border); flex-shrink:0;
   }
   .topbar .name{font-size:14px; color:var(--text-soft);}
-
+ 
   .chat-area{flex:1; overflow-y:auto;}
   .chat-inner{max-width:720px; margin:0 auto; padding:32px 24px 12px; display:flex; flex-direction:column; gap:22px;}
-
+ 
   /* empty state */
   .empty{
     height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -81,7 +84,7 @@
     font-size:13px; color:var(--text-soft); cursor:pointer; transition:background .15s;
   }
   .suggestion:hover{background:var(--panel); color:var(--text);}
-
+ 
   /* messages */
   .msg{display:flex; gap:12px; align-items:flex-start;}
   .msg.user{flex-direction:row-reverse;}
@@ -103,7 +106,7 @@
   .thinking span:nth-child(2){animation-delay:.2s;}
   .thinking span:nth-child(3){animation-delay:.4s;}
   @keyframes blink{0%,80%,100%{opacity:.2;}40%{opacity:1;}}
-
+ 
   /* input */
   .composer{padding:16px 24px 22px;}
   .composer-inner{
@@ -133,14 +136,39 @@
   .img-result{margin-top:8px;}
   .img-result img{max-width:280px; border-radius:12px; display:block;}
   .hint{text-align:center; font-size:11.5px; color:var(--text-soft); margin-top:10px;}
-
+ 
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+ 
+  @media (max-width: 760px){
+    body{overflow:hidden;}
+    .sidebar{
+      position:fixed; top:0; left:0; bottom:0; z-index:100;
+      transform:translateX(-100%); transition:transform .2s ease;
+      width:240px;
+    }
+    .sidebar.open{transform:translateX(0); box-shadow:0 0 24px rgba(0,0,0,0.4);}
+    #menuToggle{display:flex !important;}
+    .topbar{padding:0 14px; gap:10px;}
+    .chat-inner{padding:20px 14px 12px;}
+    .composer{padding:12px 14px 16px;}
+    .empty h1{font-size:26px;}
+    .empty p{font-size:14px;}
+    .suggestions{gap:8px;}
+    .suggestion{font-size:12.5px; padding:8px 12px;}
+    .bubble{max-width:80%; font-size:14.5px;}
+    .composer-inner{padding:8px 8px 8px 12px;}
+  }
+  .sidebar-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:90;
+  }
+  .sidebar-overlay.show{display:block;}
 </style>
 </head>
 <body>
-
-<div class="sidebar">
+ 
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
   <div class="brand"><span class="dot"></span>nova</div>
   <button class="new-chat" id="newChatBtn">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -151,10 +179,15 @@
   </div>
   <div class="sidebar-foot">Nova — an ai for everyone</div>
 </div>
-
+ 
 <div class="main">
-  <div class="topbar"><span class="name">Nova</span><span></span></div>
-
+  <div class="topbar">
+    <button id="menuToggle" class="icon-btn" style="display:none;" aria-label="Toggle menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="name">Nova</span><span></span>
+  </div>
+ 
   <div class="chat-area" id="chatArea">
     <div class="empty" id="emptyState">
       <h1>What can I help with?</h1>
@@ -168,7 +201,7 @@
     </div>
     <div class="chat-inner" id="chatInner" style="display:none;"></div>
   </div>
-
+ 
   <div class="composer">
     <div class="composer-inner">
       <button class="icon-btn" id="attachBtn" title="Attach a file" aria-label="Attach a file">
@@ -187,7 +220,7 @@
     <div class="hint">Nova can make mistakes. Check important info.</div>
   </div>
 </div>
-
+ 
 <script>
 (function(){
   const chatArea = document.getElementById('chatArea');
@@ -198,19 +231,29 @@
   const suggestions = document.querySelectorAll('.suggestion');
   const newChatBtn = document.getElementById('newChatBtn');
   const history = document.getElementById('history');
-
+ 
   let messages = []; // {role, content}
+ 
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  function closeSidebar(){ sidebar.classList.remove('open'); sidebarOverlay.classList.remove('show'); }
+  function openSidebar(){ sidebar.classList.add('open'); sidebarOverlay.classList.add('show'); }
+  menuToggle.addEventListener('click', () => {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  sidebarOverlay.addEventListener('click', closeSidebar);
   let attachedFileContent = null;
   let attachedFileName = null;
-
+ 
   const attachBtn = document.getElementById('attachBtn');
   const imageBtn = document.getElementById('imageBtn');
   const fileInput = document.getElementById('fileInput');
   const attachedFileBar = document.getElementById('attachedFile');
   let imageMode = false;
-
+ 
   attachBtn.addEventListener('click', () => fileInput.click());
-
+ 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files[0];
     if (!file) return;
@@ -227,7 +270,7 @@
       reader.readAsText(file);
     }
   });
-
+ 
   function showAttachedBar(){
     attachedFileBar.style.display = 'flex';
     attachedFileBar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg> ${attachedFileName} <span id="removeFile" style="cursor:pointer; text-decoration:underline; margin-left:4px;">remove</span>`;
@@ -237,14 +280,14 @@
       fileInput.value = '';
     });
   }
-
+ 
   imageBtn.addEventListener('click', () => {
     imageMode = !imageMode;
     imageBtn.style.background = imageMode ? 'var(--amber-soft)' : 'transparent';
     imageBtn.style.color = imageMode ? 'var(--amber)' : 'var(--text-soft)';
     input.placeholder = imageMode ? 'Describe the image to generate…' : 'Message Nova…';
   });
-
+ 
   async function generateImage(prompt){
     if (emptyState.style.display !== 'none'){
       emptyState.style.display = 'none';
@@ -278,7 +321,7 @@
       renderMessage('assistant', "Image generation hit an error: " + detail + ". If this is the first image you've tried, check for a sign-in popup from Puter (it's free, just confirms you're a real user) — and make sure this page is opened via http:// or https://, not as a local file.");
     }
   }
-
+ 
   function autoGrow(){
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 160) + 'px';
@@ -288,13 +331,13 @@
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   });
-
+ 
   suggestions.forEach(s => s.addEventListener('click', () => {
     input.value = s.dataset.q;
     autoGrow();
     send();
   }));
-
+ 
   newChatBtn.addEventListener('click', () => {
     if (messages.length){
       addHistoryEntry(messages[0].content.slice(0,28));
@@ -304,19 +347,20 @@
     chatInner.style.display = 'none';
     emptyState.style.display = 'flex';
     input.value = ''; autoGrow();
+    closeSidebar();
   });
-
+ 
   function addHistoryEntry(label){
     const item = document.createElement('div');
     item.className = 'history-item';
     item.textContent = label || 'New conversation';
     history.appendChild(item);
   }
-
+ 
   function escapeHtml(str){
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
-
+ 
   function formatText(text){
     const lines = text.split('\n');
     let html = '';
@@ -336,7 +380,7 @@
     if (inList) html += '</ul>';
     return html;
   }
-
+ 
   function inlineFormat(line){
     let safe = escapeHtml(line);
     safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -344,7 +388,7 @@
     safe = safe.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--amber); text-decoration:underline;">$1</a>');
     return safe;
   }
-
+ 
   function renderMessage(role, text){
     const wrap = document.createElement('div');
     wrap.className = 'msg ' + (role === 'user' ? 'user' : 'nova');
@@ -357,7 +401,7 @@
     chatArea.scrollTop = chatArea.scrollHeight;
     return wrap;
   }
-
+ 
   function renderThinking(){
     const wrap = document.createElement('div');
     wrap.className = 'msg nova';
@@ -369,11 +413,11 @@
     chatInner.appendChild(wrap);
     chatArea.scrollTop = chatArea.scrollHeight;
   }
-
+ 
   async function send(){
     const text = input.value.trim();
     if (!text) return;
-
+ 
     if (imageMode){
       input.value = ''; autoGrow();
       imageMode = false;
@@ -382,18 +426,18 @@
       input.placeholder = 'Message Nova…';
       return generateImage(text);
     }
-
+ 
     if (emptyState.style.display !== 'none'){
       emptyState.style.display = 'none';
       chatInner.style.display = 'flex';
       chatInner.style.flexDirection = 'column';
     }
-
+ 
     let outgoingText = text;
     if (attachedFileContent){
       outgoingText = `[Attached file: ${attachedFileName}]\n\n${attachedFileContent}\n\n${text}`;
     }
-
+ 
     messages.push({role:'user', content:outgoingText});
     renderMessage('user', text + (attachedFileName ? `  📎 ${attachedFileName}` : ''));
     input.value = ''; autoGrow();
@@ -401,7 +445,7 @@
     attachedFileBar.style.display = 'none';
     fileInput.value = '';
     renderThinking();
-
+ 
     try {
       if (typeof puter === 'undefined' || !puter.ai || !puter.ai.chat){
         document.getElementById('thinkingMsg').remove();
@@ -422,10 +466,11 @@
       renderMessage('assistant', "Something went wrong reaching Nova: " + detail);
     }
   }
-
+ 
   sendBtn.addEventListener('click', send);
 })();
 </script>
-
+ 
 </body>
 </html>
+ 
